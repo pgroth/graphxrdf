@@ -6,10 +6,14 @@ import scala.util.control.Breaks._
 
 
 object RDFLoad {
-	def main(in:Array[String]) = {
+	def main(args:Array[String]) = {
 		val scc = new SparkConf
 		val sc = new SparkContext(scc)
-		val src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
+		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
+		if (args.length > 0) {
+			src = args(0)
+		}
+		Console.println(src)
 		val graph = RDFLoader.loadNTriples(sc, src)
 		Console.println(graph.edges.count)
 		var thresh = 1000
