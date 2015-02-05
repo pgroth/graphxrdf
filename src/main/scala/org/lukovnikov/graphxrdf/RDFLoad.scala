@@ -107,9 +107,9 @@ object RDFLoad {
 			inbox = Graph(agg, inbox.edges)
 			iter -= 1
 		}
-		val origvertices = graph.vertices.collect.take(20)
+		val origvertices = graph.vertices.take(20)
 		val outgvcollect = outg.vertices.take(20)
-		val aggrvertices = inbox.vertices.collect.take(20)
+		val aggrvertices = inbox.vertices.take(20)
 		for (vertex <- aggrvertices) {
 			Console.println(vertex)
 			//Console.println(vertex._1.toString + ": " + vertex._2.toString)
