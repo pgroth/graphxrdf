@@ -18,7 +18,7 @@ object RDFLoad {
 		Console.println(graph.edges.count)
 		var thresh = 1000
 		breakable {
-			for (vertex <- graph.vertices.collect) {
+			for (vertex <- graph.vertices.take(1000)) {
 				Console.println(vertex)
 				thresh -= 1
 				if (thresh < 0) break
