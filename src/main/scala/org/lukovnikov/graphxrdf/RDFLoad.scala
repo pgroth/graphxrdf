@@ -11,13 +11,24 @@ object RDFLoad {
 		val scc = new SparkConf
 		val sc = new SparkContext(scc)
 		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
+		var out = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.rwr.out"
 		var numiter = 2
+		var limit = 100
+		var threshold = 0.001
 		if (args.length > 0) {
 			src = args(0)
 		}
 		if (args.length > 1) {
-			numiter = args(1).toInt
+			out = args(1)
 		}
+		if (args.length > 2) {
+			numiter = args(2).toInt
+		}
+		if (args.length > 3) {
+			limit = args(3).toInt
+		}
+		if (args.length > 4)
+			threshold = args(4).toInt
 		Console.println(src)
 		val graph = RDFLoader.loadNTriples(sc, src)
 		Console.println(graph.edges.count)
@@ -29,28 +40,37 @@ object RDFLoad {
 				if (thresh < 0) break
 			}
 		}
-		rwr(graph,numiter)
+		rwr(graph,numiter,limit,threshold).vertices.saveAsTextFile(out)
 	}
 	
-	def rwr(graph:Graph[String,String], numiter:Int = 2) = {
-		var outdegrees = graph.outDegrees.map(
-				outdeg => 
-					(outdeg._1, (outdeg._2, Map[Long, Double](outdeg._1 -> 1.0)))
-				)
-		var inbox = Graph[(Int,Map[Long, Double]), String](outdegrees, graph.edges)
-		for (vertex <- outdegrees.collect)
-			Console.println(vertex)
-		//g2 = g2.mapEdges(edge => null)
+	def rwr(
+			graph:Graph[String,String], 
+			numiter:Int = 2, 
+			limit:Int = 100, 
+			thresh:Double = 0.001)
+		:Graph[Map[Long,Double],String] = {
+		var aggv = graph
+					.mapVertices((id, x) => (0, Map[Long, Double](id -> 1.0)))
+					.joinVertices(graph.outDegrees){
+						(id, x, y) => (y, x._2)
+					}
+		var agg = aggv.vertices
+		var inbox = Graph[(Int,Map[Long, Double]), String](agg, graph.edges)
+		var outgv = agg.map(v => (v._1, Map[Long,Double]()))
+		var outg = Graph[Map[Long,Double], String](outgv, graph.edges)
+		
 		var iter = numiter
 		while (iter > 0) {
-			val agg = inbox.aggregateMessages[(Int,Map[Long,Double])](
+			agg = inbox.aggregateMessages[(Int,Map[Long,Double])](
 				triplet => {
 					val distId = triplet.dstId
 					val sourcedeg = triplet.srcAttr._1
 					var ret = Map[Long, Double]()//Map(distId -> 1.0/sourcedeg)
 					if (triplet.dstAttr != null)
 						for (entry <- triplet.dstAttr._2) {
-							ret += (entry._1 -> entry._2/sourcedeg)
+							val score = entry._2/sourcedeg
+							if (score > thresh)
+								ret += (entry._1 -> entry._2/sourcedeg)
 						}
 					triplet.sendToSrc((sourcedeg, ret))
 				},
@@ -68,30 +88,39 @@ object RDFLoad {
 							inbox(bxe._1) = bxe._2
 						}
 					}
-					// merge inbox into state
-					/* var state = scala.collection.mutable.Map() ++ a._2
-					for (x <- inbox) {
-						if (state.contains(x._1)) {
-							state(x._1) += x._2
-						} else {
-							state(x._1) = x._2
-						}
-					} // */
 					(degree, Map() ++ inbox) 
 				}
 			)
+			outg = outg.joinVertices(agg)
+				{(a,b,c) => {
+						val ret = scala.collection.mutable.Map() ++ b
+						for (x <- c._2) {
+							if (ret.contains(x._1)) {
+								ret(x._1) += x._2
+							}else{
+								ret(x._1) = x._2
+							}
+						}
+						Map() ++ ret.toSeq.sortWith(_._2 > _._2).take(limit).toMap
+					}	
+				}
 			inbox = Graph(agg, inbox.edges)
 			iter -= 1
 		}
-		val origvertices = graph.vertices.collect
-		val aggrvertices = inbox.vertices.collect
+		val origvertices = graph.vertices.collect.take(20)
+		val outgvcollect = outg.vertices.take(20)
+		val aggrvertices = inbox.vertices.collect.take(20)
 		for (vertex <- aggrvertices) {
 			Console.println(vertex)
 			//Console.println(vertex._1.toString + ": " + vertex._2.toString)
 		}
+		for (vertex <- outgvcollect) {
+			Console.println(vertex)
+		}
 		for (vertex <- origvertices) {
 			Console.println(vertex._1.toString + ": " + vertex._2)
 		}
+		return outg
 	}
 
 }
