@@ -1,0 +1,5 @@
+.settings/
+.project
+.cache
+.classpath
+*.nt
