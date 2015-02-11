@@ -55,7 +55,9 @@ object RDFLoader extends Logging {
       path: String,
       //numPartitions: Int = -1,
       edgeStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
-      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY)
+      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
+      light: Boolean = false
+      )
     : Graph[String, String] =
   {
     val startTime = System.currentTimeMillis()
