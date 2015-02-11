@@ -4,6 +4,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
 import scala.util.control.Breaks._
 import org.apache.spark.graphx.Graph
+import org.apache.spark.rdd.RDD
 
 
 object RDFLoad {
@@ -13,7 +14,7 @@ object RDFLoad {
 		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
 		var out = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.rwr.out"
 		var dictout = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.dict.out"
-		var numiter = 2
+		var numiter = 10
 		var limit = 100
 		var threshold = 0.001
 		if (args.length > 0) {
@@ -34,7 +35,16 @@ object RDFLoad {
 		if (args.length > 5)
 			threshold = args(5).toDouble
 		Console.println(src)
-		val graph = RDFLoader.loadNTriples(sc, src)
+		// filter vertices to only dbpedia
+		val filterregex = "http://dbpedia\\.org/.+".r
+		var graph = RDFLoader.loadNTriples(sc, src)
+		graph = graph.subgraph(x=>true,
+			  (id, value) => value match {
+			      case filterregex() => true
+			      case _ => false
+			  }
+			)
+		
 		Console.println(graph.edges.count)
 		var thresh = 1000
 		breakable {
@@ -54,6 +64,8 @@ object RDFLoad {
 			limit:Int = 100, 
 			thresh:Double = 0.001)
 		:Graph[Map[Long,Double],String] = {
+
+
 		var aggv = graph
 					.mapVertices((id, x) => (0, Map[Long, Double](id -> 1.0)))
 					.joinVertices(graph.outDegrees){
@@ -63,6 +75,7 @@ object RDFLoad {
 		var inbox = Graph[(Int,Map[Long, Double]), String](agg, graph.edges)
 		var outgv = agg.map(v => (v._1, Map[Long,Double]()))
 		var outg = Graph[Map[Long,Double], String](outgv, graph.edges)
+		
 		
 		var iter = numiter
 		while (iter > 0) {
