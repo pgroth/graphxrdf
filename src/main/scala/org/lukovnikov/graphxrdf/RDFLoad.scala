@@ -12,6 +12,7 @@ object RDFLoad {
 		val sc = new SparkContext(scc)
 		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
 		var out = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.rwr.out"
+		var dictout = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.dict.out"
 		var numiter = 2
 		var limit = 100
 		var threshold = 0.001
@@ -22,13 +23,16 @@ object RDFLoad {
 			out = args(1)
 		}
 		if (args.length > 2) {
-			numiter = args(2).toInt
+			dictout = args(2)
 		}
 		if (args.length > 3) {
-			limit = args(3).toInt
+			numiter = args(3).toInt
 		}
-		if (args.length > 4)
-			threshold = args(4).toDouble
+		if (args.length > 4) {
+			limit = args(4).toInt
+		}
+		if (args.length > 5)
+			threshold = args(5).toDouble
 		Console.println(src)
 		val graph = RDFLoader.loadNTriples(sc, src)
 		Console.println(graph.edges.count)
@@ -40,6 +44,7 @@ object RDFLoad {
 				if (thresh < 0) break
 			}
 		}
+		RDFLoader.getdictionary(graph).saveAsTextFile(dictout)
 		rwr(graph,numiter,limit,threshold).vertices.saveAsTextFile(out)
 	}
 	

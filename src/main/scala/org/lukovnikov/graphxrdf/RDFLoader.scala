@@ -55,8 +55,7 @@ object RDFLoader extends Logging {
       path: String,
       //numPartitions: Int = -1,
       edgeStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
-      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
-      light: Boolean = false
+      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY
       )
     : Graph[String, String] =
   {
@@ -96,6 +95,14 @@ object RDFLoader extends Logging {
     val graph = Graph(vertices, edges)
     return graph // so far
   } // end of edgeListFile
+  
+  /**
+   * Gets dictionary for entities (not properties) from the provided graph.
+   */
+  def getdictionary(graph:Graph[String,String]): RDD[(Long,String)] = {
+    val vertices = graph.vertices.map(x => (x._1.toLong, x._2))
+    return vertices
+  }
   
   /**
    *   Implements a simple hashing function for Strings
