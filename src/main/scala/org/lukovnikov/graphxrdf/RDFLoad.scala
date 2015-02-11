@@ -28,7 +28,7 @@ object RDFLoad {
 			limit = args(3).toInt
 		}
 		if (args.length > 4)
-			threshold = args(4).toInt
+			threshold = args(4).toDouble
 		Console.println(src)
 		val graph = RDFLoader.loadNTriples(sc, src)
 		Console.println(graph.edges.count)
