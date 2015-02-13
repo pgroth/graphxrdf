@@ -15,33 +15,17 @@ trait RDFGraphExecutable {
 		
 		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
 		var out = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.rwr.out"
-		var filterregex = "http://dbpedia\\.org/.+"
-		filterregex = null
 		
 		
 		if (args.length > 0)
 			src = args(0)
 		if (args.length > 1)
 			out = args(1)
-		if (args.length > 2)
-			filterregex = args(2)
 			
 		var lessargs = args.drop(2).map(x => x.toDouble)
 			
 		var graph = RDFLoader.loadNTriples(sc, src)
 		
-		if (filterregex != null && filterregex != "" && filterregex != " ")
-			filterGraph(filterregex.r, graph)
-		
-		Console.println(graph.edges.count)
-		var thresh = 1000
-		breakable {
-			for (vertex <- graph.vertices.take(1000)) {
-				Console.println(vertex)
-				thresh -= 1
-				if (thresh < 0) break
-			}
-		}
 		execute(graph, lessargs:_*).vertices.saveAsTextFile(out)
 	}
 	

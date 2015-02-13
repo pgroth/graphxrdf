@@ -4,5 +4,6 @@
 .classpath
 *.nt
 /bin
-/target
+/target/classes/
 /10
+/target
