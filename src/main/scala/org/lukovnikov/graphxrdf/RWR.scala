@@ -1,70 +1,21 @@
-package graphxTest
+package org.lukovnikov.graphxrdf
 
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
-import scala.util.control.Breaks._
-import org.apache.spark.graphx.Graph
-import org.apache.spark.rdd.RDD
+import org.apache.spark.graphx.{Graph}
 
-
-object RDFLoad {
-	def main(args:Array[String]) = {
-		val scc = new SparkConf
-		val sc = new SparkContext(scc)
-		var src = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/bigsample.nt"
-		var out = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.rwr.out"
-		var dictout = "/home/denis/dev/sparkdev/graphxrdf/src/main/scala/sample.dict.out"
-		var numiter = 10
-		var limit = 100
-		var threshold = 0.001
-		if (args.length > 0) {
-			src = args(0)
-		}
-		if (args.length > 1) {
-			out = args(1)
-		}
-		if (args.length > 2) {
-			dictout = args(2)
-		}
-		if (args.length > 3) {
-			numiter = args(3).toInt
-		}
-		if (args.length > 4) {
-			limit = args(4).toInt
-		}
-		if (args.length > 5)
-			threshold = args(5).toDouble
-		Console.println(src)
-		// filter vertices to only dbpedia
-		val filterregex = "http://dbpedia\\.org/.+".r
-		var graph = RDFLoader.loadNTriples(sc, src)
-		graph = graph.subgraph(x=>true,
-			  (id, value) => value match {
-			      case filterregex() => true
-			      case _ => false
-			  }
-			)
-		
-		Console.println(graph.edges.count)
-		var thresh = 1000
-		breakable {
-			for (vertex <- graph.vertices.take(1000)) {
-				Console.println(vertex)
-				thresh -= 1
-				if (thresh < 0) break
-			}
-		}
-		RDFLoader.getdictionary(graph).saveAsTextFile(dictout)
-		rwr(graph,numiter,limit,threshold).vertices.saveAsTextFile(out)
-	}
+object RWR extends RDFGraphExecutable{
 	
-	def rwr(
+		def execute(
 			graph:Graph[String,String], 
+			args:Double*)
+/*
 			numiter:Int = 2, 
 			limit:Int = 100, 
-			thresh:Double = 0.001)
+			thresh:Double = 0.001)			*/
 		:Graph[Map[Long,Double],String] = {
-
+			
+		val numiter:Int = if (args.length > 0) args(0).intValue else 2
+		val limit:Int = if (args.length > 1) args(1).intValue else 100
+		val thresh:Double = if (args.length > 2) args(2).doubleValue else 0.001
 
 		var aggv = graph
 					.mapVertices((id, x) => (0, Map[Long, Double](id -> 1.0)))

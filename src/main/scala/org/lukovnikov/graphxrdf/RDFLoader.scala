@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package graphxTest
+package org.lukovnikov.graphxrdf
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{Logging, SparkContext}
