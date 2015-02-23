@@ -24,6 +24,7 @@ import org.apache.spark.AccumulatorParam
 import org.apache.spark.rdd.RDD
 import org.apache.spark.graphx.Graph
 import org.apache.spark.graphx.Edge
+import org.apache.spark.SparkContext._
 
 /**
  * Provides utilities for loading RDF [[Graph]]s from .NT dumps.

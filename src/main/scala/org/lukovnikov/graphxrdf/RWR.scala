@@ -28,8 +28,8 @@ object RWR extends RDFGraphExecutable{
 		var outg = Graph[Map[Long,Double], String](outgv, graph.edges)
 		
 		
-		var iter = numiter
-		while (iter > 0) {
+		var iter = 0
+		while (iter < numiter) {
 			agg = inbox.aggregateMessages[(Int,Map[Long,Double])](
 				triplet => {
 					val distId = triplet.dstId
@@ -74,8 +74,9 @@ object RWR extends RDFGraphExecutable{
 					}	
 				}
 			inbox = Graph(agg, inbox.edges)
-			iter -= 1
+			iter += 1
 		}
+		/*
 		val origvertices = graph.vertices.take(20)
 		val outgvcollect = outg.vertices.take(20)
 		val aggrvertices = inbox.vertices.take(20)
@@ -88,7 +89,7 @@ object RWR extends RDFGraphExecutable{
 		}
 		for (vertex <- origvertices) {
 			Console.println(vertex._1.toString + ": " + vertex._2)
-		}
+		}*/
 		return outg
 	}
 
