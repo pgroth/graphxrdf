@@ -3,6 +3,7 @@ package org.lukovnikov.graphxrdf
 import org.apache.spark.graphx.{Graph}
 import org.apache.spark.graphx.Edge
 import org.apache.spark.SparkContext._
+import org.apache.spark.storage.StorageLevel
 
 object RWX extends RDFGraphExecutable {
 	
@@ -27,13 +28,14 @@ object RWX extends RDFGraphExecutable {
 		var currg = sourceg.mapEdges(edge => (1, edge.attr))
 		val dstedges = currg.edges.filter(edge => edge.attr._1 == 1)
 				.map(edge => (edge.dstId.toLong, (edge.srcId.toLong, edge.attr._1, edge.attr._2)) )
+				.persist()
 				
 		var iter = 0
 		while (iter < numiter) {
 			var srcedges = currg.edges.filter(edge => edge.attr._1 == iter+1)
 					.map(edge => (edge.srcId.toLong, (edge.dstId.toLong, edge.attr._1, edge.attr._2)) )
 			// var x = new Edge(1,2,(1,1.0))
-			var newedges = srcedges.join(dstedges)
+			var newedges = dstedges.join(srcedges)
 					.map(edge => new Edge(edge._2._2._1, edge._2._1._1, 
 							(edge._2._1._2 + edge._2._2._2, edge._2._1._3*edge._2._2._3)))
 					.filter(edge => edge.attr._2 > thresh)
