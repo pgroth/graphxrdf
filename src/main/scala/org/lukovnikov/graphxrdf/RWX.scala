@@ -59,7 +59,11 @@ object RWX extends RDFGraphExecutable {
 							inbox(bxe._1) = bxe._2
 						}
 					}
-					Map() ++ inbox
+					var inbox2 = Map[Long,Double]()
+					if (inbox.size > limit) {
+						inbox2 = inbox.toSeq.sortWith(_._2 > _._2).take(limit).toMap
+					}
+					inbox2
 				})
 		return Graph(curgv, graph.edges)
 	}
