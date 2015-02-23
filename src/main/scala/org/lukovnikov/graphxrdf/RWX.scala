@@ -26,11 +26,11 @@ object RWX extends RDFGraphExecutable {
 		
 		var currg = sourceg.mapEdges(edge => (1, edge.attr))
 		var iter = 0
+		val dstedges = currg.edges.filter(edge => edge.attr._1 == 1)
+				.map(edge => (edge.dstId.toLong, (edge.srcId.toLong, edge.attr._1, edge.attr._2)) )
 		while (iter < numiter) {
 			var srcedges = currg.edges.filter(edge => edge.attr._1 == iter+1)
 					.map(edge => (edge.srcId.toLong, (edge.dstId.toLong, edge.attr._1, edge.attr._2)) )
-			var dstedges = currg.edges.filter(edge => edge.attr._1 == 1)
-					.map(edge => (edge.dstId.toLong, (edge.srcId.toLong, edge.attr._1, edge.attr._2)) )
 			// var x = new Edge(1,2,(1,1.0))
 			var newedges = srcedges.join(dstedges)
 					.map(edge => new Edge(edge._2._2._1, edge._2._1._1, 
