@@ -4,7 +4,7 @@ import org.apache.spark.graphx.{Graph}
 import org.apache.spark.graphx.Edge
 import org.apache.spark.SparkContext._
 
-class RWX extends RDFGraphExecutable {
+object RWX extends RDFGraphExecutable {
 	
 		def execute(
 			graph:Graph[String,String], 
