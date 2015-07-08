@@ -30,7 +30,7 @@ import org.apache.spark.SparkContext._
  * Provides utilities for loading RDF [[Graph]]s from .NT dumps.
  */
 object RDFLoader extends Logging {
-  
+
   val relregex = "^<([^>]+)>\\s<([^>]+)>\\s<([^>]+)>\\s\\.$".r
   val propregex = "^<([^>]+)>\\s<([^>]+)>\\s(.+)\\.$".r
   val propvalregex = "^<([^>]+)>\\s(.+)$".r
@@ -42,12 +42,15 @@ object RDFLoader extends Logging {
    * the hash as VertexId and the URI (for resources) or the value (for literals)
    * as the associated String value for that vertex.
    * The edges map between vertices and carry the label of the relation URI.
+   *
+   * PG: modifying so that the properties are a tuple with a map from id to relation
+   *
    * Literal values that are identical in value but occur in different triples
    * are mapped to different nodes.
-   *  
+   *
    * @param sc SparkContext
    * @param path the path to the file (e.g., /home/data/file or hdfs://file)
-   * 
+   *
    * @param edgeStorageLevel the desired storage level for the edge partitions
    * @param vertexStorageLevel the desired storage level for the vertex partitions
    */
@@ -58,12 +61,12 @@ object RDFLoader extends Logging {
       edgeStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
       vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY
       )
-    : Graph[String, String] =
+    : Graph[String, (Long, String)] =
   {
     val startTime = System.currentTimeMillis()
 
     val lines = sc.textFile(path)
-    
+
     val vertices = lines
     .flatMap(line => {
       line match {
@@ -74,37 +77,37 @@ object RDFLoader extends Logging {
     })
     .distinct()
     //.repartition(numPartitions)
-    .map(name => 
+    .map(name =>
       name match {
         case propvalregex(pre, value) => (gethash("<" + pre + "> " + value), value)
         case _ => (gethash(name), name)
       }
     )
     .persist(vertexStorageLevel) // TODO: set name etc
-    
-    val edges: RDD[Edge[String]] = lines
+
+    val edges: RDD[Edge[(Long, String)]] = lines
     .map( line => {
       line match {
-        case relregex(subj, rel, obj)     => Edge(gethash(subj), gethash(obj), rel)
-        case propregex(subj, rel, obj)    
-            => Edge(gethash(subj), gethash("<" + subj + "-" + rel + "> " + obj), rel)
-        case _ => Edge(0,0, "null")
+        case relregex(subj, rel, obj) => Edge(gethash(subj), gethash(obj), (gethash(rel), rel))
+        case propregex(subj, rel, obj)
+            => Edge(gethash(subj), gethash("<" + subj + "-" + rel + "> " + obj), (gethash(rel), rel))
+        case _ => Edge(0,0, (0L, "null") )
       }
     })
     .persist(edgeStorageLevel) // TODO: set name
-    
+
     val graph = Graph(vertices, edges)
     return graph // so far
   } // end of edgeListFile
-  
+
   /**
    * Gets dictionary for entities (not properties) from the provided graph.
    */
-  def getdictionary(graph:Graph[String,String]): RDD[(Long,String)] = {
+  def getdictionary(graph:Graph[String,(Long, String)]): RDD[(Long,String)] = {
     val vertices = graph.vertices.map(x => (x._1.toLong, x._2))
     return vertices
   }
-  
+
   /**
    *   Implements a simple hashing function for Strings
    */
